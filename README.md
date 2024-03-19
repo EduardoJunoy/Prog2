@@ -1,4 +1,4 @@
-#Prog2EDat
+# Prog2EDat
 
 **Curso: 2022/2023**
 
@@ -6,7 +6,7 @@
 
 **Universidad: Universidad Autónoma de Madrid (UAM)**
 
-###Entregas
+### Entregas
 **Autor/es: Eduardo Junoy**
 **Notas de entregas:**
 Entrega 1: 8,9	
@@ -14,7 +14,7 @@ Entrega 2: 8,2
 Entrega 3: 10	
 Entrega 4: 5,3
 
-###Prácticas
+### Prácticas
 **Autor/es: Eduardo Junoy y Daniel Tirado**
 **Notas de prácticas:**
 P1: 8,7
