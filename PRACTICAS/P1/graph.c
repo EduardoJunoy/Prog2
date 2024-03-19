@@ -1,0 +1,399 @@
+#include "graph.h"
+#include <string.h>
+#define MAX_VTX 4096
+
+
+struct _Graph {
+    Vertex *vertices[MAX_VTX];
+    Bool connections[MAX_VTX][MAX_VTX];
+    int num_vertices;
+    int num_edges;
+};
+
+Graph * graph_init(){
+    Graph *g = NULL;
+    int i, j;
+
+    g = (Graph*)malloc(sizeof(Graph));
+    if (!g)
+    {
+
+        return NULL;
+    }
+
+    for (i=0; i<MAX_VTX; i++) {
+        for (j=0; j<MAX_VTX; j++) {
+            g->connections[i][j] = FALSE;
+        }
+    }
+    
+    g->num_vertices = 0;
+    g->num_edges = 0;
+
+    return g;
+}
+
+void graph_free(Graph *g) {
+    int i;
+    for (i=0; i<g->num_vertices; i++) 
+        vertex_free(g->vertices[i]);
+    
+    free (g);
+}
+
+/**
+ * @brief Inserts a new vertex in a graph.
+ *
+ * Creates a vertex by calling vertex_initFromString and adds it to
+ * a graph. If a vertex with the same id already exists in the graph, 
+ * it is not added. 
+ *
+ * @param g Pointer to the graph.
+ * @param desc Description of the vertex.
+ *
+ * @return Returns OK if the vertex could be created (or if it exists 
+ * already), ERROR otherwise.
+ **/
+Status graph_newVertex(Graph *g, char *desc){
+    Vertex *v=NULL;
+    long id;
+    int pos;
+
+    if (!g || !desc)
+        return ERROR;
+    
+    v = vertex_initFromString(desc);
+    if (!v) return ERROR;
+
+    id = vertex_getId(v);
+    if (id == -1) return ERROR;
+
+    if (graph_contains(g, id) == TRUE)
+        return OK;
+    
+    pos = g->num_vertices;
+
+    g->vertices[pos] = v;
+    g->connections[pos][pos] = FALSE;
+
+
+    /*if (g->num_vertices == 1)
+        g->num_edges++;
+    else
+        g->num_edges += 2;*/
+        
+    g->num_vertices++;
+
+   return OK;
+}
+
+Status graph_newEdge(Graph *g, long orig, long dest){
+    int i, pos_o, pos_d, count=0;
+
+    if (!g || !orig || !dest)
+    {
+        return ERROR;
+    }
+
+    for (i=0; i<g->num_vertices; i++) {
+        if (count == 2) break;
+
+        if (orig == vertex_getId(g->vertices[i])) { 
+            pos_o = i;
+            count++;
+        }
+
+        if (dest == vertex_getId(g->vertices[i])) { 
+            pos_d = i;
+            count++;
+        }
+    }
+
+    if (count == 2) { 
+        g->connections[pos_o][pos_d] = TRUE;
+        g->num_edges++;
+        return OK;
+    }
+
+    return ERROR;
+}
+
+
+Bool graph_contains(const Graph *g, long id){
+    int i;
+    long id_g;
+    
+    if (!g || id == -1)
+        return FALSE;
+
+    for (i=0; i<g->num_vertices; i++) {
+        id_g = vertex_getId(g->vertices[i]);
+        if (id == id_g)
+            return TRUE;
+    }
+
+    return FALSE;
+}
+
+int graph_getNumberOfVertices(const Graph *g){
+    if (!g)
+    {
+        return -1;
+    }
+    return g->num_vertices;    
+}
+
+int graph_getNumberOfEdges(const Graph *g){
+    if (!g)
+    {
+        return -1;
+    }
+    return g->num_edges; 
+}
+
+Bool graph_connectionExists(const Graph *g, long orig, long dest){
+    int i, pos_o, pos_d, count=0;
+
+    if (!g || orig == -1 || dest == -1) {
+        return FALSE;
+    }
+    
+    for (i=0; i<g->num_vertices; i++) {
+        if (count == 2) break;
+
+        if (orig == vertex_getId(g->vertices[i])) { 
+            pos_o = i;
+            count++;
+        }
+
+        if (dest == vertex_getId(g->vertices[i])) { 
+            pos_d = i;
+            count++;
+        }
+    }
+
+    if (g->connections[pos_o][pos_d] == TRUE)
+        return TRUE;
+    
+    return FALSE;
+}
+
+/**
+ * @brief Gets the number of connections starting at a given vertex.
+ *
+ * @param g Pointer to the graph.
+ * @param id ID of the origin vertex.
+ *
+ * @return Returns the total number of connections starting at 
+ * vertex with ID id, or -1 if there is any error.
+ **/
+int graph_getNumberOfConnectionsFromId(const Graph *g, long id){
+    int i, pos, count;
+
+    if (!g || !id) return -1;
+
+    for (i=0; i<g->num_vertices; i++) {
+        if (id == vertex_getId(g->vertices[i])) { 
+            pos = i;
+            break;
+        }
+    }
+
+    for (i=count=0; i<g->num_vertices; i++) {
+        if (g->connections[pos][i] == TRUE)
+            count++;
+    }
+
+    return count;
+}
+
+
+long *graph_getConnectionsFromId(const Graph *g, long id){
+    int i, k, pos;
+    long *arr=NULL;
+
+    if (!g || id == -1) return NULL;
+    
+    arr = (long *) malloc(graph_getNumberOfConnectionsFromId(g, id)*sizeof(long));
+    if (!arr) return NULL;
+
+    for (i=0; i<g->num_vertices; i++) {
+        if (id == vertex_getId(g->vertices[i])) { 
+            pos = i;
+            break;
+        }
+    }
+
+    for (i=0, k=0; i<g->num_vertices; i++) {
+        if (g->connections[pos][i] == TRUE) { 
+            arr[k] = vertex_getId(g->vertices[i]);
+            k++;
+        }
+    }
+
+    return arr;
+}
+
+/**
+ * @brief Gets the number of connections starting at a given vertex.
+ *
+ * @param g Pointer to the graph.
+ * @param tag Tag of the origin vertex.
+ *
+ * @return Returns the total number of connections starting at 
+ * vertex with Tag tag, or -1 if there is any error.
+ **/
+int graph_getNumberOfConnectionsFromTag(const Graph *g, char *tag){
+    int i, pos, count;
+
+    if (!g || !tag) return -1;
+    
+    for (i=0; i<g->num_vertices; i++) { 
+        if (strcmp(tag, vertex_getTag(g->vertices[i])) == 0) { 
+            pos = i;
+            break;
+        }
+    }
+    for (i=count=0; i<g->num_vertices; i++) {
+        if (g->connections[pos][i] == TRUE)
+            count++;
+    }
+
+    return count;   
+}
+
+/**
+ * @brief Returns an array with the ids of all the vertices which a 
+ * given vertex connects to.
+ *
+ * This function allocates memory for the array.
+ *
+ * @param g Pointer to the graph.
+ * @param tag Tag of the origin vertex.
+ *
+ * @return Returns an array with the ids of all the vertices to which 
+ * the vertex with Tag tag is connected, or NULL if there is any error.
+ */
+long *graph_getConnectionsFromTag(const Graph *g, char *tag){
+    int i, k, pos;
+    long *arr=NULL;
+
+    if (!g || !tag) return NULL;
+    
+    arr = (long *) malloc(graph_getNumberOfConnectionsFromTag(g, tag)*sizeof(long));
+    if (!arr) return NULL;
+
+    for (i=0; i<g->num_vertices; i++) {
+        if (strcmp(tag, vertex_getTag(g->vertices[i])) == 0) { 
+            pos = i;
+            break;
+        }
+    }
+    
+    for (i=0, k=0; i<g->num_vertices; i++) {
+        if (g->connections[pos][i] == TRUE) { 
+            arr[k] = vertex_getId(g->vertices[i]);
+            k++;
+        }
+    }
+    return arr;
+}   
+
+/**
+ * @brief Prints a graph.
+ *
+ * Prints the graph g to the file pf.
+ * The format to be followed is: print a line by vertex with the 
+ * information associated with the vertex and the id of their connections:
+ *
+ * For example:
+ * [1, Madrid, 0]: [2, Toledo, 0] [3, Avila, 0] 
+ * [2, Toledo, 0]: [4, Segovia, 0] 
+ * [3, Avila, 0]: 
+ * [4, Segovia, 0]: [3, Avila, 0]
+ *
+ * @param pf File descriptor.
+ * @param g Pointer to the graph.
+ *
+ * @return The number of characters printed, or -1 if there is any error.
+ */
+int graph_print (FILE *pf, const Graph *g){
+    int i, j, k, num_print=0;
+    long *arr, v_id;
+    
+    if (!pf ||!g) return -1;
+    
+    for (i = 0; i < g->num_vertices; i++) {
+        num_print += vertex_print(pf, g->vertices[i]);
+        fprintf(pf, ": ");
+
+        v_id = vertex_getId(g->vertices[i]);
+        arr = graph_getConnectionsFromId(g, v_id);
+
+        for (j=0, k=0; k<graph_getNumberOfConnectionsFromId(g, v_id); j++) { 
+            if (arr[k] == vertex_getId(g->vertices[j])) {
+                num_print += vertex_print(pf, g->vertices[j]);
+                k++;
+            }
+        }
+        num_print += fprintf(pf, "\n");
+        free(arr);
+    }
+
+
+    return num_print;
+}
+    
+    
+
+
+
+/**
+ * @brief Reads a graph definition from a text file.
+ *
+ * Reads a graph description from the text file pointed to by fin,
+ * and fills the graph g.
+ *
+ * The first line in the file contains the number of vertices.
+ * Then one line per vertex with the vertex description.  
+ * Finally one line per connection, with the ids of the origin and 
+ * the destination. 
+ *
+ * For example:
+ *
+ * 4
+ * id:1 tag:Madrid
+ * id:2 tag:Toledo
+ * id:3 tag:Avila
+ * id:4 tag:Segovia
+ * 1 2
+ * 1 3
+ * 2 4
+ * 4 3
+ *
+ * @param fin Pointer to the input stream.
+ * @param g Pointer to the graph.
+ *
+ * @return OK or ERROR
+ */
+Status graph_readFromFile (FILE *fin, Graph *g){
+    int i;
+    int num_vertices;
+    long orig, dest;
+    char desc[1024];  
+
+    if (!fin) return ERROR;        
+
+    fscanf(fin, "%d", &num_vertices);
+    fgetc(fin);
+
+    for (i=0; i<num_vertices; i++) {
+        fgets(desc, 1024, fin);
+        graph_newVertex(g, desc);
+    }
+
+    while (fscanf(fin, "%ld %ld", &orig, &dest) != EOF) 
+        graph_newEdge(g, orig, dest);
+    
+    return OK;
+}
