@@ -36,3 +36,6 @@ P4: 9
 
 Descripción:
 Repositorio con los archivos generados durante la realización de los ejercicios de teoría y prácticas de Estructuras de Datos.
+
+Comando útil de valgrind:
+valgrind --leak-check=full --show-leak-kinds=all --track-origins=yes ./archivoejecutable
